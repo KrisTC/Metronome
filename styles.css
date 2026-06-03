@@ -44,18 +44,10 @@ button {
   width: min(100%, 560px);
   min-height: 100vh;
   margin: 0 auto;
-  padding: max(18px, env(safe-area-inset-top)) 18px max(22px, env(safe-area-inset-bottom));
+  padding: max(14px, env(safe-area-inset-top)) 16px max(18px, env(safe-area-inset-bottom));
   display: grid;
-  gap: 18px;
+  gap: 12px;
   align-content: start;
-}
-
-.topbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding-top: 4px;
 }
 
 h1,
@@ -65,7 +57,7 @@ p {
 }
 
 h1 {
-  font-size: 1.7rem;
+  font-size: 1.6rem;
   line-height: 1.05;
   font-weight: 780;
   letter-spacing: 0;
@@ -80,31 +72,8 @@ legend {
   text-transform: uppercase;
 }
 
-.subtitle,
 .hint {
   color: var(--muted);
-}
-
-.subtitle {
-  margin-top: 3px;
-  font-size: 0.98rem;
-}
-
-.state-label {
-  min-width: 78px;
-  padding: 8px 11px;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  background: rgb(255 255 255 / 44%);
-  color: var(--muted);
-  font-size: 0.9rem;
-  text-align: center;
-}
-
-.state-label.playing {
-  border-color: rgb(35 103 90 / 40%);
-  background: rgb(35 103 90 / 12%);
-  color: var(--primary-dark);
 }
 
 .tempo-panel,
@@ -116,9 +85,21 @@ legend {
 }
 
 .tempo-panel {
-  padding: 18px;
+  padding: 12px 14px 14px;
   display: grid;
-  gap: 14px;
+  gap: 7px;
+}
+
+.tempo-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.tempo-heading h2 {
+  flex: 0 0 auto;
+  text-align: right;
 }
 
 .bpm-control {
@@ -136,7 +117,7 @@ legend {
   border-radius: 0;
   background: transparent;
   color: var(--text);
-  font-size: clamp(4.5rem, 28vw, 8rem);
+  font-size: clamp(3.3rem, 22vw, 6.2rem);
   font-weight: 800;
   line-height: 0.95;
   letter-spacing: 0;
@@ -151,14 +132,14 @@ legend {
 }
 
 .bpm-control span:last-child {
-  padding-bottom: 12px;
+  padding-bottom: 8px;
   color: var(--muted);
   font-weight: 760;
 }
 
 .hint {
-  margin-top: -8px;
-  font-size: 0.9rem;
+  margin-top: -6px;
+  font-size: 0.84rem;
   text-align: center;
 }
 
@@ -176,7 +157,7 @@ legend {
 }
 
 .step-button {
-  min-height: 52px;
+  min-height: 44px;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: #f6eee3;
@@ -192,12 +173,12 @@ legend {
 .pulse-panel {
   display: grid;
   justify-items: center;
-  gap: 16px;
-  padding: 6px 0 2px;
+  gap: 12px;
+  padding: 4px 0 0;
 }
 
 .pulse-ring {
-  width: min(52vw, 236px);
+  width: min(48vw, 216px);
   aspect-ratio: 1;
   border: 10px solid rgb(35 103 90 / 18%);
   border-radius: 50%;
@@ -210,7 +191,7 @@ legend {
 }
 
 .pulse-ring span {
-  font-size: clamp(3.3rem, 18vw, 5.8rem);
+  font-size: clamp(2.5rem, 13vw, 4.2rem);
   font-weight: 820;
   line-height: 1;
 }
@@ -250,7 +231,7 @@ legend {
 }
 
 .play-button {
-  min-height: 76px;
+  min-height: 68px;
   border-radius: 8px;
   background: var(--primary);
   color: #fff;
@@ -388,7 +369,6 @@ legend {
     background: var(--bg);
   }
 
-  .state-label,
   .step-button,
   .segmented span {
     background: #262c2f;

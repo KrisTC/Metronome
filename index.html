@@ -15,16 +15,11 @@
   </head>
   <body>
     <main class="app" aria-labelledby="app-title">
-      <header class="topbar">
-        <div>
-          <h1 id="app-title">Metronome</h1>
-          <p class="subtitle">Steady flute practice</p>
-        </div>
-        <output id="state-label" class="state-label" aria-live="polite">Ready</output>
-      </header>
-
       <section class="tempo-panel" aria-labelledby="tempo-title">
-        <h2 id="tempo-title">Tempo</h2>
+        <div class="tempo-heading">
+          <h1 id="app-title">Metronome</h1>
+          <h2 id="tempo-title">Tempo</h2>
+        </div>
         <label class="bpm-control">
           <span class="sr-only">Beats per minute</span>
           <input id="bpm-input" type="number" inputmode="numeric" min="30" max="240" step="1" value="84" aria-describedby="bpm-range">

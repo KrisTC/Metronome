@@ -34,7 +34,6 @@ const elements = {
   pulseRing: document.querySelector("#pulse-ring"),
   playButton: document.querySelector("#play-button"),
   playLabel: document.querySelector("#play-label"),
-  stateLabel: document.querySelector("#state-label"),
   accentToggle: document.querySelector("#accent-toggle"),
   countInToggle: document.querySelector("#count-in-toggle"),
   wakeLockToggle: document.querySelector("#wake-lock-toggle"),
@@ -136,8 +135,7 @@ function updateVisualBeat(beat, animate = true) {
 function updatePlaybackUi() {
   elements.playButton.setAttribute("aria-pressed", String(state.isPlaying));
   elements.playLabel.textContent = state.isPlaying ? "Stop" : "Start";
-  elements.stateLabel.textContent = state.isPlaying ? (state.isCountIn ? "Count in" : "Playing") : "Ready";
-  elements.stateLabel.classList.toggle("playing", state.isPlaying);
+  elements.playButton.setAttribute("aria-label", state.isPlaying ? "Stop metronome" : "Start metronome");
 }
 
 async function ensureAudio() {
