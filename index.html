@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#f7f2ea">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Metronome">
+    <title>Metronome</title>
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <main class="app" aria-labelledby="app-title">
+      <header class="topbar">
+        <div>
+          <h1 id="app-title">Metronome</h1>
+          <p class="subtitle">Steady flute practice</p>
+        </div>
+        <output id="state-label" class="state-label" aria-live="polite">Ready</output>
+      </header>
+
+      <section class="tempo-panel" aria-labelledby="tempo-title">
+        <h2 id="tempo-title">Tempo</h2>
+        <label class="bpm-control">
+          <span class="sr-only">Beats per minute</span>
+          <input id="bpm-input" type="number" inputmode="numeric" min="30" max="240" step="1" value="84" aria-describedby="bpm-range">
+          <span>BPM</span>
+        </label>
+        <p id="bpm-range" class="hint">30-240</p>
+
+        <div class="tempo-buttons" aria-label="Tempo adjustments">
+          <button class="step-button" type="button" data-step="-5">-5</button>
+          <button class="step-button" type="button" data-step="-1">-1</button>
+          <button class="step-button" type="button" data-step="1">+1</button>
+          <button class="step-button" type="button" data-step="5">+5</button>
+        </div>
+      </section>
+
+      <section class="pulse-panel" aria-label="Current beat">
+        <div id="pulse-ring" class="pulse-ring" aria-hidden="true">
+          <span id="beat-number">1</span>
+        </div>
+        <div id="beat-dots" class="beat-dots" aria-hidden="true"></div>
+      </section>
+
+      <button id="play-button" class="play-button" type="button" aria-pressed="false">
+        <span id="play-label">Start</span>
+      </button>
+
+      <section class="settings-grid" aria-label="Metronome settings">
+        <fieldset class="setting-card">
+          <legend>Beats</legend>
+          <div class="segmented" role="radiogroup" aria-label="Beats per bar">
+            <label><input type="radio" name="beats" value="1"> <span>1</span></label>
+            <label><input type="radio" name="beats" value="2"> <span>2</span></label>
+            <label><input type="radio" name="beats" value="3"> <span>3</span></label>
+            <label><input type="radio" name="beats" value="4" checked> <span>4</span></label>
+            <label><input type="radio" name="beats" value="6"> <span>6</span></label>
+          </div>
+        </fieldset>
+
+        <fieldset class="setting-card">
+          <legend>Click</legend>
+          <div class="segmented sound-choice" role="radiogroup" aria-label="Click sound">
+            <label><input type="radio" name="sound" value="soft" checked> <span>Soft</span></label>
+            <label><input type="radio" name="sound" value="wood"> <span>Wood</span></label>
+            <label><input type="radio" name="sound" value="clear"> <span>Clear</span></label>
+          </div>
+        </fieldset>
+
+        <div class="toggle-row">
+          <label class="toggle">
+            <input id="accent-toggle" type="checkbox" checked>
+            <span>Accent first beat</span>
+          </label>
+          <label class="toggle">
+            <input id="count-in-toggle" type="checkbox">
+            <span>Count in one bar</span>
+          </label>
+          <label class="toggle">
+            <input id="wake-lock-toggle" type="checkbox" checked>
+            <span>Keep screen awake</span>
+          </label>
+        </div>
+      </section>
+    </main>
+
+    <script src="app.js" defer></script>
+  </body>
+</html>

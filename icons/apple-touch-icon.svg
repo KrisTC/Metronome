@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180" role="img" aria-label="Metronome icon">
+  <rect width="180" height="180" rx="38" fill="#f7f2ea"/>
+  <path d="M62 145h56l-11-91c-1-9-8-16-17-16s-16 7-17 16L62 145Z" fill="#23675a"/>
+  <path d="M74 136h32L99 60c-1-4-4-8-9-8s-8 4-9 8l-7 76Z" fill="#fffaf2"/>
+  <path d="M90 59v53" stroke="#c05f32" stroke-width="8" stroke-linecap="round"/>
+  <circle cx="90" cy="118" r="9" fill="#c05f32"/>
+  <path d="M56 145h68" stroke="#184c43" stroke-width="10" stroke-linecap="round"/>
+</svg>
