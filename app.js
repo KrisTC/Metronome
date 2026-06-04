@@ -1,10 +1,13 @@
 const MIN_BPM = 30;
 const MAX_BPM = 240;
-const APP_VERSION = "v9";
+const APP_VERSION = "v11";
 const STORAGE_KEY = "metronome-settings-v1";
 const LOOKAHEAD_MS = 25;
 const SCHEDULE_AHEAD_SECONDS = 0.12;
 const AUDIO_POOL_SIZE = 6;
+const MAX_LATE_SECONDS = 0.09;
+const AUDIO_LOAD_TIMEOUT_MS = 2500;
+const AUDIO_RELEASE_FALLBACK_MS = 450;
 const SOUND_KEYS = ["metronome", "drumstick"];
 const SOUND_SAMPLES = {
   drumstick: {
@@ -37,6 +40,7 @@ const state = {
   currentBeat: 1,
   nextBeat: 1,
   nextNoteTime: 0,
+  playbackToken: 0,
   schedulerId: null,
   audioPools: null,
   audioPoolIndexes: null,
@@ -175,9 +179,16 @@ async function ensureAudio() {
         audio.preload = "auto";
         audio.playsInline = true;
         audio.load();
-        return audio;
+        return {
+          audio,
+          busy: false,
+          loaded: false,
+          releaseTimer: null
+        };
       });
     });
+
+    await loadAudioElements();
   }
 
   if (!state.audioUnlocked) {
@@ -186,9 +197,61 @@ async function ensureAudio() {
   }
 }
 
+async function loadAudioElements() {
+  const loads = SOUND_KEYS.flatMap((key) => (
+    state.audioPools[key].map((entry) => waitForAudioReady(entry))
+  ));
+
+  await Promise.all(loads);
+}
+
+function waitForAudioReady(entry) {
+  const { audio } = entry;
+  if (audio.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
+    entry.loaded = true;
+    return Promise.resolve();
+  }
+
+  return new Promise((resolve) => {
+    let settled = false;
+    const cleanup = () => {
+      audio.removeEventListener("loadeddata", handleReady);
+      audio.removeEventListener("canplay", handleReady);
+      audio.removeEventListener("error", handleReady);
+      window.clearTimeout(timer);
+    };
+    const handleReady = () => {
+      if (settled) {
+        return;
+      }
+
+      settled = true;
+      entry.loaded = !audio.error;
+      cleanup();
+      resolve();
+    };
+    const timer = window.setTimeout(handleReady, AUDIO_LOAD_TIMEOUT_MS);
+
+    audio.addEventListener("loadeddata", handleReady, { once: true });
+    audio.addEventListener("canplay", handleReady, { once: true });
+    audio.addEventListener("error", handleReady, { once: true });
+    audio.load();
+  });
+}
+
 async function unlockAudioElements() {
-  const unlocks = SOUND_KEYS.flatMap((key) => state.audioPools[key].map((audio) => {
-    const volume = audio.volume;
+  for (const key of SOUND_KEYS) {
+    for (const entry of state.audioPools[key]) {
+      await unlockAudioElement(entry);
+    }
+  }
+}
+
+async function unlockAudioElement(entry) {
+  const { audio } = entry;
+  const volume = audio.volume;
+
+  try {
     audio.volume = 0;
     resetAudio(audio);
 
@@ -197,46 +260,102 @@ async function unlockAudioElements() {
       audio.pause();
       resetAudio(audio);
       audio.volume = volume;
-      return Promise.resolve();
+      return;
     }
 
-    return playPromise.then(() => {
-      audio.pause();
-      resetAudio(audio);
-    }).catch(() => {
-      // Some browsers do not need or allow an explicit audio unlock.
-    }).finally(() => {
-      audio.volume = volume;
-    });
-  }));
-
-  await Promise.all(unlocks);
+    await playPromise;
+    audio.pause();
+    resetAudio(audio);
+  } catch {
+    // Some browsers do not need or allow an explicit audio unlock.
+  } finally {
+    audio.volume = volume;
+  }
 }
 
 function getClockTime() {
   return window.performance.now() / 1000;
 }
 
-function playSample(isAccent) {
-  const key = SOUND_KEYS.includes(state.sound) ? state.sound : defaults.sound;
+function playSample(key, isAccent) {
   const sample = SOUND_SAMPLES[key];
-  const pool = state.audioPools[key];
-  const index = state.audioPoolIndexes[key];
-  const audio = pool[index];
+  const entry = takeAvailableAudioEntry(key);
 
-  state.audioPoolIndexes[key] = (index + 1) % pool.length;
+  if (!entry || !entry.loaded) {
+    return;
+  }
 
+  const { audio } = entry;
+  entry.busy = true;
+  window.clearTimeout(entry.releaseTimer);
+  audio.onended = null;
+  audio.onpause = null;
   audio.pause();
   resetAudio(audio);
   audio.volume = isAccent ? sample.accentVolume : sample.volume;
   audio.playbackRate = isAccent ? sample.accentRate : 1;
+  audio.onended = () => releaseAudioEntry(entry);
+  audio.onpause = () => {
+    if (audio.currentTime === 0 || audio.ended) {
+      releaseAudioEntry(entry);
+    }
+  };
 
   const playPromise = audio.play();
   if (playPromise) {
-    playPromise.catch(() => {
+    playPromise.then(() => {
+      entry.releaseTimer = window.setTimeout(() => {
+        releaseAudioEntry(entry);
+      }, AUDIO_RELEASE_FALLBACK_MS);
+    }).catch(() => {
+      releaseAudioEntry(entry);
       // Keep the visual metronome running if a browser refuses playback.
     });
+  } else {
+    entry.releaseTimer = window.setTimeout(() => {
+      releaseAudioEntry(entry);
+    }, AUDIO_RELEASE_FALLBACK_MS);
   }
+}
+
+function takeAvailableAudioEntry(key) {
+  const pool = state.audioPools[key];
+  const startIndex = state.audioPoolIndexes[key];
+
+  for (let offset = 0; offset < pool.length; offset += 1) {
+    const index = (startIndex + offset) % pool.length;
+    const entry = pool[index];
+    if (!entry.busy && entry.loaded) {
+      state.audioPoolIndexes[key] = (index + 1) % pool.length;
+      return entry;
+    }
+  }
+
+  return null;
+}
+
+function releaseAudioEntry(entry) {
+  entry.audio.onended = null;
+  entry.audio.onpause = null;
+  entry.busy = false;
+  window.clearTimeout(entry.releaseTimer);
+  entry.releaseTimer = null;
+}
+
+function stopAllAudioElements() {
+  if (!state.audioPools) {
+    return;
+  }
+
+  SOUND_KEYS.forEach((key) => {
+    state.audioPools[key].forEach((entry) => {
+      entry.audio.onended = null;
+      entry.audio.onpause = null;
+      entry.audio.pause();
+      resetAudio(entry.audio);
+      releaseAudioEntry(entry);
+    });
+  });
 }
 
 function resetAudio(audio) {
@@ -249,8 +368,18 @@ function resetAudio(audio) {
 
 function scheduleClick(beat, time) {
   const isAccent = beat === 1 && state.accent;
+  const key = SOUND_KEYS.includes(state.sound) ? state.sound : defaults.sound;
+  const playbackToken = state.playbackToken;
   window.setTimeout(() => {
-    playSample(isAccent);
+    if (!state.isPlaying || state.playbackToken !== playbackToken) {
+      return;
+    }
+
+    if (getClockTime() - time > MAX_LATE_SECONDS) {
+      return;
+    }
+
+    playSample(key, isAccent);
     updateVisualBeat(beat);
   }, Math.max(0, (time - getClockTime()) * 1000));
 }
@@ -267,6 +396,10 @@ function advanceBeat() {
 }
 
 function scheduler() {
+  while (state.nextNoteTime < getClockTime() - MAX_LATE_SECONDS) {
+    advanceBeat();
+  }
+
   while (state.nextNoteTime < getClockTime() + SCHEDULE_AHEAD_SECONDS) {
     scheduleClick(state.nextBeat, state.nextNoteTime);
     advanceBeat();
@@ -302,6 +435,7 @@ async function releaseWakeLock() {
 
 async function startMetronome() {
   await ensureAudio();
+  state.playbackToken += 1;
   state.isPlaying = true;
   state.isCountIn = state.countIn;
   state.nextBeat = 1;
@@ -315,10 +449,12 @@ async function startMetronome() {
 }
 
 async function stopMetronome() {
+  state.playbackToken += 1;
   state.isPlaying = false;
   state.isCountIn = false;
   window.clearInterval(state.schedulerId);
   state.schedulerId = null;
+  stopAllAudioElements();
   await releaseWakeLock();
   updatePlaybackUi();
 }
