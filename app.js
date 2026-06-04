@@ -1,5 +1,6 @@
 const MIN_BPM = 30;
 const MAX_BPM = 240;
+const APP_VERSION = "v9";
 const STORAGE_KEY = "metronome-settings-v1";
 const LOOKAHEAD_MS = 25;
 const SCHEDULE_AHEAD_SECONDS = 0.12;
@@ -59,6 +60,7 @@ const elements = {
   wakeLockToggle: document.querySelector("#wake-lock-toggle"),
   updateToast: document.querySelector("#update-toast"),
   updateButton: document.querySelector("#update-button"),
+  versionLabel: document.querySelector("#version-label"),
   beatInputs: [...document.querySelectorAll('input[name="beats"]')],
   soundInputs: [...document.querySelectorAll('input[name="sound"]')],
   stepButtons: [...document.querySelectorAll("[data-step]")]
@@ -103,6 +105,7 @@ function saveSettings() {
 }
 
 function syncControls() {
+  elements.versionLabel.textContent = APP_VERSION;
   elements.bpmInput.value = state.bpm;
   elements.accentToggle.checked = state.accent;
   elements.countInToggle.checked = state.countIn;
@@ -184,8 +187,7 @@ async function ensureAudio() {
 }
 
 async function unlockAudioElements() {
-  const unlocks = SOUND_KEYS.map((key) => {
-    const audio = state.audioPools[key][0];
+  const unlocks = SOUND_KEYS.flatMap((key) => state.audioPools[key].map((audio) => {
     const volume = audio.volume;
     audio.volume = 0;
     resetAudio(audio);
@@ -206,7 +208,7 @@ async function unlockAudioElements() {
     }).finally(() => {
       audio.volume = volume;
     });
-  });
+  }));
 
   await Promise.all(unlocks);
 }
