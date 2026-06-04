@@ -1,10 +1,12 @@
-const CACHE_NAME = "metronome-v12";
+const CACHE_NAME = "metronome-v13";
 const ASSETS = [
   "./",
   "index.html",
   "styles.css",
   "app.js",
   "manifest.webmanifest",
+  "robots.txt",
+  "sitemap.xml",
   "icons/icon.svg",
   "icons/icon-192.png",
   "icons/icon-512.png",
