@@ -3,6 +3,22 @@ const MAX_BPM = 240;
 const STORAGE_KEY = "metronome-settings-v1";
 const LOOKAHEAD_MS = 25;
 const SCHEDULE_AHEAD_SECONDS = 0.12;
+const AUDIO_POOL_SIZE = 6;
+const SOUND_KEYS = ["metronome", "drumstick"];
+const SOUND_SAMPLES = {
+  drumstick: {
+    src: "sounds/optimized/drumstick-click.wav",
+    volume: 0.86,
+    accentVolume: 1,
+    accentRate: 1.08
+  },
+  metronome: {
+    src: "sounds/optimized/metronome-click.wav",
+    volume: 0.76,
+    accentVolume: 1,
+    accentRate: 1.05
+  }
+};
 
 const defaults = {
   bpm: 84,
@@ -10,7 +26,7 @@ const defaults = {
   accent: true,
   countIn: false,
   wakeLock: true,
-  sound: "soft"
+  sound: "metronome"
 };
 
 const state = {
@@ -21,10 +37,14 @@ const state = {
   nextBeat: 1,
   nextNoteTime: 0,
   schedulerId: null,
-  audioContext: null,
-  masterGain: null,
+  audioPools: null,
+  audioPoolIndexes: null,
+  audioUnlocked: false,
   wakeLockSentinel: null,
-  pulseTimer: null
+  pulseTimer: null,
+  serviceWorkerRegistration: null,
+  updateReady: false,
+  isRefreshing: false
 };
 
 const elements = {
@@ -37,6 +57,8 @@ const elements = {
   accentToggle: document.querySelector("#accent-toggle"),
   countInToggle: document.querySelector("#count-in-toggle"),
   wakeLockToggle: document.querySelector("#wake-lock-toggle"),
+  updateToast: document.querySelector("#update-toast"),
+  updateButton: document.querySelector("#update-button"),
   beatInputs: [...document.querySelectorAll('input[name="beats"]')],
   soundInputs: [...document.querySelectorAll('input[name="sound"]')],
   stepButtons: [...document.querySelectorAll("[data-step]")]
@@ -62,7 +84,7 @@ function loadSettings() {
     state.accent = typeof saved.accent === "boolean" ? saved.accent : defaults.accent;
     state.countIn = typeof saved.countIn === "boolean" ? saved.countIn : defaults.countIn;
     state.wakeLock = typeof saved.wakeLock === "boolean" ? saved.wakeLock : defaults.wakeLock;
-    state.sound = ["soft", "wood", "clear"].includes(saved.sound) ? saved.sound : defaults.sound;
+    state.sound = SOUND_KEYS.includes(saved.sound) ? saved.sound : defaults.sound;
   } catch {
     localStorage.removeItem(STORAGE_KEY);
   }
@@ -139,71 +161,96 @@ function updatePlaybackUi() {
 }
 
 async function ensureAudio() {
-  if (!state.audioContext) {
-    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-    state.audioContext = new AudioContextClass();
-    state.masterGain = state.audioContext.createGain();
-    state.masterGain.gain.value = 0.9;
-    state.masterGain.connect(state.audioContext.destination);
+  if (!state.audioPools) {
+    state.audioPools = {};
+    state.audioPoolIndexes = {};
+
+    SOUND_KEYS.forEach((key) => {
+      state.audioPoolIndexes[key] = 0;
+      state.audioPools[key] = Array.from({ length: AUDIO_POOL_SIZE }, () => {
+        const audio = new Audio(SOUND_SAMPLES[key].src);
+        audio.preload = "auto";
+        audio.playsInline = true;
+        audio.load();
+        return audio;
+      });
+    });
   }
 
-  if (state.audioContext.state === "suspended") {
-    await state.audioContext.resume();
+  if (!state.audioUnlocked) {
+    await unlockAudioElements();
+    state.audioUnlocked = true;
   }
 }
 
-function soundProfile(isAccent) {
-  const profiles = {
-    soft: {
-      frequency: isAccent ? 880 : 560,
-      type: "sine",
-      gain: isAccent ? 0.18 : 0.12,
-      duration: 0.052
-    },
-    wood: {
-      frequency: isAccent ? 1040 : 700,
-      type: "triangle",
-      gain: isAccent ? 0.2 : 0.14,
-      duration: 0.038
-    },
-    clear: {
-      frequency: isAccent ? 1320 : 880,
-      type: "square",
-      gain: isAccent ? 0.12 : 0.08,
-      duration: 0.028
-    }
-  };
+async function unlockAudioElements() {
+  const unlocks = SOUND_KEYS.map((key) => {
+    const audio = state.audioPools[key][0];
+    const volume = audio.volume;
+    audio.volume = 0;
+    resetAudio(audio);
 
-  return profiles[state.sound] || profiles.soft;
+    const playPromise = audio.play();
+    if (!playPromise) {
+      audio.pause();
+      resetAudio(audio);
+      audio.volume = volume;
+      return Promise.resolve();
+    }
+
+    return playPromise.then(() => {
+      audio.pause();
+      resetAudio(audio);
+    }).catch(() => {
+      // Some browsers do not need or allow an explicit audio unlock.
+    }).finally(() => {
+      audio.volume = volume;
+    });
+  });
+
+  await Promise.all(unlocks);
+}
+
+function getClockTime() {
+  return window.performance.now() / 1000;
+}
+
+function playSample(isAccent) {
+  const key = SOUND_KEYS.includes(state.sound) ? state.sound : defaults.sound;
+  const sample = SOUND_SAMPLES[key];
+  const pool = state.audioPools[key];
+  const index = state.audioPoolIndexes[key];
+  const audio = pool[index];
+
+  state.audioPoolIndexes[key] = (index + 1) % pool.length;
+
+  audio.pause();
+  resetAudio(audio);
+  audio.volume = isAccent ? sample.accentVolume : sample.volume;
+  audio.playbackRate = isAccent ? sample.accentRate : 1;
+
+  const playPromise = audio.play();
+  if (playPromise) {
+    playPromise.catch(() => {
+      // Keep the visual metronome running if a browser refuses playback.
+    });
+  }
+}
+
+function resetAudio(audio) {
+  try {
+    audio.currentTime = 0;
+  } catch {
+    // Some mobile browsers delay seeking until metadata is ready.
+  }
 }
 
 function scheduleClick(beat, time) {
   const isAccent = beat === 1 && state.accent;
-  const profile = soundProfile(isAccent);
-  const oscillator = state.audioContext.createOscillator();
-  const gain = state.audioContext.createGain();
-  const filter = state.audioContext.createBiquadFilter();
-
-  oscillator.type = profile.type;
-  oscillator.frequency.setValueAtTime(profile.frequency, time);
-
-  filter.type = "lowpass";
-  filter.frequency.setValueAtTime(state.sound === "clear" ? 2500 : 1700, time);
-
-  gain.gain.setValueAtTime(0.0001, time);
-  gain.gain.exponentialRampToValueAtTime(profile.gain, time + 0.004);
-  gain.gain.exponentialRampToValueAtTime(0.0001, time + profile.duration);
-
-  oscillator.connect(filter);
-  filter.connect(gain);
-  gain.connect(state.masterGain);
-
-  oscillator.start(time);
-  oscillator.stop(time + profile.duration + 0.02);
-
   window.setTimeout(() => {
+    playSample(isAccent);
     updateVisualBeat(beat);
-  }, Math.max(0, (time - state.audioContext.currentTime) * 1000));
+  }, Math.max(0, (time - getClockTime()) * 1000));
 }
 
 function advanceBeat() {
@@ -218,7 +265,7 @@ function advanceBeat() {
 }
 
 function scheduler() {
-  while (state.nextNoteTime < state.audioContext.currentTime + SCHEDULE_AHEAD_SECONDS) {
+  while (state.nextNoteTime < getClockTime() + SCHEDULE_AHEAD_SECONDS) {
     scheduleClick(state.nextBeat, state.nextNoteTime);
     advanceBeat();
   }
@@ -257,7 +304,7 @@ async function startMetronome() {
   state.isCountIn = state.countIn;
   state.nextBeat = 1;
   state.currentBeat = 1;
-  state.nextNoteTime = state.audioContext.currentTime + 0.08;
+  state.nextNoteTime = getClockTime() + 0.08;
   updateVisualBeat(1, false);
   updatePlaybackUi();
   await requestWakeLock();
@@ -272,6 +319,55 @@ async function stopMetronome() {
   state.schedulerId = null;
   await releaseWakeLock();
   updatePlaybackUi();
+}
+
+function refreshForUpdate() {
+  if (state.isRefreshing) {
+    return;
+  }
+
+  state.isRefreshing = true;
+  window.location.reload();
+}
+
+function handleAppUpdateReady() {
+  state.updateReady = true;
+
+  if (state.isPlaying) {
+    elements.updateToast.hidden = false;
+    return;
+  }
+
+  refreshForUpdate();
+}
+
+function watchServiceWorkerUpdate(registration) {
+  registration.addEventListener("updatefound", () => {
+    const newWorker = registration.installing;
+    if (!newWorker) {
+      return;
+    }
+
+    newWorker.addEventListener("statechange", () => {
+      if (!navigator.serviceWorker.controller) {
+        return;
+      }
+
+      if (newWorker.state === "installed") {
+        newWorker.postMessage({ type: "SKIP_WAITING" });
+      }
+
+      if (newWorker.state === "activated") {
+        handleAppUpdateReady();
+      }
+    });
+  });
+}
+
+function applyWaitingServiceWorker(registration) {
+  if (registration.waiting && navigator.serviceWorker.controller) {
+    registration.waiting.postMessage({ type: "SKIP_WAITING" });
+  }
 }
 
 function setBpm(value) {
@@ -296,6 +392,8 @@ function bindEvents() {
       await startMetronome();
     }
   });
+
+  elements.updateButton.addEventListener("click", refreshForUpdate);
 
   elements.stepButtons.forEach((button) => {
     button.addEventListener("click", () => {
@@ -359,6 +457,10 @@ function bindEvents() {
     if (document.visibilityState === "visible" && state.isPlaying && state.wakeLock) {
       await requestWakeLock();
     }
+
+    if (document.visibilityState === "visible" && state.serviceWorkerRegistration) {
+      state.serviceWorkerRegistration.update().catch(() => {});
+    }
   });
 }
 
@@ -368,7 +470,22 @@ async function registerServiceWorker() {
   }
 
   try {
-    await navigator.serviceWorker.register("service-worker.js");
+    const hadController = Boolean(navigator.serviceWorker.controller);
+
+    navigator.serviceWorker.addEventListener("controllerchange", () => {
+      if (!hadController) {
+        return;
+      }
+
+      handleAppUpdateReady();
+    });
+
+    state.serviceWorkerRegistration = await navigator.serviceWorker.register("service-worker.js", {
+      updateViaCache: "none"
+    });
+    watchServiceWorkerUpdate(state.serviceWorkerRegistration);
+    applyWaitingServiceWorker(state.serviceWorkerRegistration);
+    state.serviceWorkerRegistration.update().catch(() => {});
   } catch {
     // The metronome still works if offline installation support is unavailable.
   }

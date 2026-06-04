@@ -77,7 +77,8 @@ legend {
 }
 
 .tempo-panel,
-.setting-card {
+.setting-card,
+.credits-panel {
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--panel);
@@ -265,7 +266,7 @@ legend {
 }
 
 .sound-choice {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .segmented input {
@@ -317,6 +318,59 @@ legend {
   width: 23px;
   height: 23px;
   accent-color: var(--primary);
+}
+
+.credits-panel {
+  padding: 12px 14px;
+  display: grid;
+  gap: 5px;
+}
+
+.credits-panel p {
+  color: var(--muted);
+  font-size: 0.88rem;
+  line-height: 1.35;
+}
+
+.credits-panel a {
+  color: var(--primary-dark);
+  font-weight: 720;
+}
+
+.update-toast {
+  position: fixed;
+  right: 16px;
+  bottom: max(16px, env(safe-area-inset-bottom));
+  left: 16px;
+  width: min(528px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: var(--panel);
+  box-shadow: var(--shadow);
+  color: var(--text);
+  font-weight: 720;
+  z-index: 10;
+}
+
+.update-toast[hidden] {
+  display: none;
+}
+
+.update-toast button {
+  min-height: 40px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--primary);
+  color: #fff;
+  cursor: pointer;
+  font-weight: 760;
 }
 
 :focus-visible {

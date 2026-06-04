@@ -1,4 +1,4 @@
-const CACHE_NAME = "metronome-v3";
+const CACHE_NAME = "metronome-v7";
 const ASSETS = [
   "./",
   "index.html",
@@ -8,12 +8,16 @@ const ASSETS = [
   "icons/icon.svg",
   "icons/icon-192.png",
   "icons/icon-512.png",
-  "icons/apple-touch-icon.png"
+  "icons/apple-touch-icon.png",
+  "sounds/optimized/drumstick-click.wav",
+  "sounds/optimized/metronome-click.wav"
 ];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS))
+    caches.open(CACHE_NAME).then((cache) => (
+      cache.addAll(ASSETS.map((asset) => new Request(asset, { cache: "reload" })))
+    ))
   );
   self.skipWaiting();
 });
@@ -27,8 +31,19 @@ self.addEventListener("activate", (event) => {
   self.clients.claim();
 });
 
+self.addEventListener("message", (event) => {
+  if (event.data && event.data.type === "SKIP_WAITING") {
+    self.skipWaiting();
+  }
+});
+
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") {
+    return;
+  }
+
+  const requestUrl = new URL(event.request.url);
+  if (!["http:", "https:"].includes(requestUrl.protocol)) {
     return;
   }
 
@@ -39,8 +54,11 @@ self.addEventListener("fetch", (event) => {
       }
 
       return fetch(event.request).then((response) => {
-        const copy = response.clone();
-        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
+        if (requestUrl.origin === self.location.origin && response.ok) {
+          const copy = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
+        }
+
         return response;
       });
     })

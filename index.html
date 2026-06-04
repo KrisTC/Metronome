@@ -4,6 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="theme-color" content="#f7f2ea">
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="Metronome">
@@ -59,11 +60,10 @@
         </fieldset>
 
         <fieldset class="setting-card">
-          <legend>Click</legend>
-          <div class="segmented sound-choice" role="radiogroup" aria-label="Click sound">
-            <label><input type="radio" name="sound" value="soft" checked> <span>Soft</span></label>
-            <label><input type="radio" name="sound" value="wood"> <span>Wood</span></label>
-            <label><input type="radio" name="sound" value="clear"> <span>Clear</span></label>
+          <legend>Sound</legend>
+          <div class="segmented sound-choice" role="radiogroup" aria-label="Sound">
+            <label><input type="radio" name="sound" value="metronome" checked> <span>Classic</span></label>
+            <label><input type="radio" name="sound" value="drumstick"> <span>Stick</span></label>
           </div>
         </fieldset>
 
@@ -82,7 +82,22 @@
           </label>
         </div>
       </section>
+
+      <section class="credits-panel" aria-labelledby="credits-title">
+        <h2 id="credits-title">Audio</h2>
+        <p>
+          Samples from Freesound Community on Pixabay:
+          <a href="https://pixabay.com/users/freesound_community-46691455/?utm_source=link-attribution&amp;utm_medium=referral&amp;utm_campaign=music&amp;utm_content=103712" target="_blank" rel="noopener noreferrer">Stick</a>
+          and
+          <a href="https://pixabay.com/users/freesound_community-46691455/?utm_source=link-attribution&amp;utm_medium=referral&amp;utm_campaign=music&amp;utm_content=85688" target="_blank" rel="noopener noreferrer">Classic</a>.
+        </p>
+      </section>
     </main>
+
+    <div id="update-toast" class="update-toast" hidden>
+      <span>Update ready</span>
+      <button id="update-button" type="button">Refresh</button>
+    </div>
 
     <script src="app.js" defer></script>
   </body>
