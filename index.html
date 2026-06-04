@@ -3,17 +3,58 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <meta name="description" content="A simple installable metronome web app with offline support and iPhone home screen installation.">
+    <meta name="description" content="A simple free metronome web app with accurate timing, offline support, and no ads or logins.">
     <meta name="theme-color" content="#f7f2ea">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="Metronome">
     <title>Metronome</title>
+    <link rel="canonical" href="https://kristc.github.io/Metronome/">
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
     <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Metronome">
+    <meta property="og:title" content="Metronome">
+    <meta property="og:description" content="A simple free metronome web app with accurate timing, offline support, and no ads or logins.">
+    <meta property="og:url" content="https://kristc.github.io/Metronome/">
+    <meta property="og:image" content="https://kristc.github.io/Metronome/icons/icon-512.png">
+    <meta property="og:image:width" content="512">
+    <meta property="og:image:height" content="512">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="Metronome">
+    <meta name="twitter:description" content="A simple free metronome web app with accurate timing, offline support, and no ads or logins.">
+    <meta name="twitter:image" content="https://kristc.github.io/Metronome/icons/icon-512.png">
     <link rel="stylesheet" href="styles.css">
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "@id": "https://kristc.github.io/Metronome/#app",
+        "name": "Metronome",
+        "url": "https://kristc.github.io/Metronome/",
+        "applicationCategory": "MusicApplication",
+        "operatingSystem": "Any",
+        "browserRequirements": "Requires a modern browser with Web Audio support.",
+        "description": "A simple free metronome web app with accurate timing, offline support, and no ads or logins.",
+        "image": "https://kristc.github.io/Metronome/icons/icon-512.png",
+        "isAccessibleForFree": true,
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        },
+        "featureList": [
+          "30-240 BPM tempo range",
+          "Beat groupings for 1, 2, 3, 4, and 6 beats",
+          "Optional first-beat accent",
+          "Optional one-bar count-in",
+          "Offline support after first load",
+          "iPhone home screen installation"
+        ]
+      }
+    </script>
   </head>
   <body>
     <main class="app" aria-labelledby="app-title">

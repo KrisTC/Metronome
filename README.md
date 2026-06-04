@@ -1,6 +1,6 @@
 # Metronome
 
-A small, phone-first metronome web app for steady music practice.
+A small, phone-first metronome web app for steady music practice. It is free, has no ads, and does not require a login.
 
 The app is plain HTML, CSS, and JavaScript. It can be installed to the home screen as a Progressive Web App and works offline after the first successful load.
 
@@ -113,7 +113,7 @@ When changing cached files, bump both:
 - `APP_VERSION` in `app.js`
 - `CACHE_NAME` in `service-worker.js`
 
-The visible app version should match the service worker cache version, for example `v13` and `metronome-v13`.
+The visible app version should match the service worker cache version, for example `v14` and `metronome-v14`.
 
 ## Future Ideas
 

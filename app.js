@@ -1,6 +1,6 @@
 const MIN_BPM = 30;
 const MAX_BPM = 240;
-const APP_VERSION = "v13";
+const APP_VERSION = "v14";
 const STORAGE_KEY = "metronome-settings-v1";
 const LOOKAHEAD_MS = 25;
 const SCHEDULE_AHEAD_SECONDS = 0.12;

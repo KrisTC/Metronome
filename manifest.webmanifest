@@ -1,10 +1,14 @@
 {
   "name": "Metronome",
   "short_name": "Metronome",
-  "description": "A simple flute-friendly metronome for steady practice.",
+  "description": "A simple free metronome web app with accurate timing, offline support, and no ads or logins.",
+  "id": "https://kristc.github.io/Metronome/",
   "start_url": ".",
   "scope": ".",
   "display": "standalone",
+  "lang": "en",
+  "dir": "ltr",
+  "categories": ["music", "education", "utilities"],
   "background_color": "#f7f2ea",
   "theme_color": "#f7f2ea",
   "orientation": "portrait",
@@ -26,6 +30,21 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Open Metronome",
+      "short_name": "Open",
+      "description": "Open the metronome.",
+      "url": ".",
+      "icons": [
+        {
+          "src": "icons/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
     }
   ]
 }
